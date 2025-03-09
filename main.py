@@ -19,7 +19,11 @@ load_dotenv(override=True)  # 既存の環境変数を上書き
 
 # Google Gemini API設定
 API_KEY = os.getenv("API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-pro")
+AVAILABLE_MODELS = {
+    "Gemini 1.5 Pro": "gemini-1.5-pro",
+    "Gemini 2.0 Flash": "gemini-2.0-flash"
+}
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 
 # キーボードショートカット設定
 SHORTCUT_KEY = os.getenv("SHORTCUT_KEY", ",")  # デフォルトはカンマ
@@ -84,8 +88,9 @@ class TextMeaningFinderApp(rumps.App):
             icon=None
         )
         
-        # 現在のモードを設定
+        # 現在のモードとモデルを設定
         self.current_mode = MODE_MEANING
+        self.current_model = GEMINI_MODEL
         
         # Geminiモデルの初期化
         self.setup_llm_model()
@@ -99,9 +104,16 @@ class TextMeaningFinderApp(rumps.App):
                 rumps.MenuItem("意味解析モード", callback=self.switch_to_meaning_mode),
                 rumps.MenuItem("翻訳モード", callback=self.switch_to_translate_mode)
             ]),
+            rumps.MenuItem("モデル選択", [
+                rumps.MenuItem("Gemini 1.5 Pro", callback=self.switch_model),
+                rumps.MenuItem("Gemini 2.0 Flash", callback=self.switch_model)
+            ]),
             rumps.MenuItem("設定", callback=self.show_settings),
             rumps.MenuItem("終了", callback=self.quit_app)
         ]
+        
+        # 現在のモデルにチェックマークを付ける
+        self.update_model_menu()
         
         # キーボードリスナーの初期化
         self.setup_keyboard_listener()
@@ -110,7 +122,24 @@ class TextMeaningFinderApp(rumps.App):
         debug_print(f"ショートカットキー: Command + Shift + {SHORTCUT_KEY}")
         debug_print(f"必要なモディファイアキー: {SHORTCUT_MODIFIER}")
         debug_print(f"初期モード: {self.current_mode}")
+        debug_print(f"初期モデル: {self.current_model}")
     
+    def update_model_menu(self):
+        """モデル選択メニューの状態を更新"""
+        for item in self.menu["モデル選択"].values():
+            item._menuitem.setState(False)  # チェックマークを外す
+            if AVAILABLE_MODELS[item.title] == self.current_model:
+                item._menuitem.setState(True)  # 現在のモデルにチェックマークを付ける
+
+    def switch_model(self, sender):
+        """Geminiモデルを切り替え"""
+        model_name = sender.title
+        self.current_model = AVAILABLE_MODELS[model_name]
+        self.setup_llm_model()  # モデルを再初期化
+        self.update_model_menu()  # メニューの状態を更新
+        debug_print(f"モデルを切り替えました: {self.current_model}")
+        show_notification("モデル切替", f"モデルを{model_name}に切り替えました")
+
     def setup_llm_model(self):
         """LLMモデルの初期化"""
         try:
@@ -143,7 +172,7 @@ class TextMeaningFinderApp(rumps.App):
                 },
             ]
             self.model = genai.GenerativeModel(
-                GEMINI_MODEL,
+                self.current_model,  # 現在選択されているモデルを使用
                 generation_config=generation_config,
                 safety_settings=safety_settings
             )
