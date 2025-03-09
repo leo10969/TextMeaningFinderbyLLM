@@ -284,7 +284,10 @@ class TextMeaningFinderApp(rumps.App):
                 keyboard_controller.release('c')
                 keyboard_controller.release(keyboard.Key.cmd)
                 
-                # クリップボードから選択テキストを即座に取得
+                # クリップボードの内容が更新されるまで少し待機
+                time.sleep(0.1)  # 100ミリ秒待機
+                
+                # クリップボードから選択テキストを取得
                 selected_text = pyperclip.paste().strip()
                 
                 if not selected_text:
@@ -296,8 +299,11 @@ class TextMeaningFinderApp(rumps.App):
                     )
                     return
                 
-                # 直接LLM処理を開始
-                threading.Thread(target=self.query_llm, args=(selected_text,)).start()
+                # 選択テキストを変数に保存
+                text_to_process = selected_text
+                
+                # LLM処理を開始
+                threading.Thread(target=self.query_llm, args=(text_to_process,)).start()
                 
             except Exception as e:
                 debug_print(f"テキスト処理でエラーが発生しました: {e}")
