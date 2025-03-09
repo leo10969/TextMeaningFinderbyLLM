@@ -21,7 +21,9 @@ load_dotenv(override=True)  # 既存の環境変数を上書き
 API_KEY = os.getenv("API_KEY")
 AVAILABLE_MODELS = {
     "Gemini 1.5 Pro": "gemini-1.5-pro",
-    "Gemini 2.0 Flash": "gemini-2.0-flash"
+    "Gemini 2.0 Flash": "gemini-2.0-flash",
+    "Gemini 2.0 Flash-Lite": "gemini-2.0-flash-lite",
+    "Gemini 2.0 Pro": "gemini-2.0-pro"
 }
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 
@@ -105,8 +107,8 @@ class TextMeaningFinderApp(rumps.App):
                 rumps.MenuItem("翻訳モード", callback=self.switch_to_translate_mode)
             ]),
             rumps.MenuItem("モデル選択", [
-                rumps.MenuItem("Gemini 1.5 Pro", callback=self.switch_model),
-                rumps.MenuItem("Gemini 2.0 Flash", callback=self.switch_model)
+                rumps.MenuItem(model_name, callback=self.switch_model)
+                for model_name in AVAILABLE_MODELS.keys()
             ]),
             rumps.MenuItem("設定", callback=self.show_settings),
             rumps.MenuItem("終了", callback=self.quit_app)
